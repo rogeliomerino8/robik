@@ -2,9 +2,10 @@
 
 import { useState, useRef, useCallback } from "react";
 import { X, Upload, FileText, Loader2, CheckCircle, AlertCircle, Camera, FolderOpen } from "lucide-react";
+import Image from "next/image";
 import { useToast } from "./toast";
 import { Button } from "./button";
-import { Card, CardContent } from "./card";
+import { Card } from "./card";
 import { Progress } from "./progress";
 import { Badge } from "./badge";
 
@@ -97,46 +98,7 @@ const UploadDocumentModal = ({ isOpen, onClose, onDocumentUploaded }: UploadDocu
     onClose();
   };
 
-  const handleFileSelect = useCallback((files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    
-    const file = files[0];
-    
-    // Validar tipo de archivo
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-    if (!allowedTypes.includes(file.type)) {
-      setUploadStatus("error");
-      return;
-    }
-
-    // Validar tamaño (máximo 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setUploadStatus("error");
-      return;
-    }
-
-    // Crear preview para imágenes
-    let preview: string | undefined;
-    if (file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          setUploadedFile({
-            file,
-            preview: e.target.result as string
-          });
-        }
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setUploadedFile({ file });
-    }
-
-    // Iniciar proceso de subida
-    startUploadProcess(file);
-  }, []);
-
-  const startUploadProcess = async (file: File) => {
+  const startUploadProcess = useCallback(async (file: File) => {
     setUploadStatus("uploading");
     
     // Simular subida con progreso
@@ -188,7 +150,45 @@ const UploadDocumentModal = ({ isOpen, onClose, onDocumentUploaded }: UploadDocu
       onDocumentUploaded(newDocument);
       handleClose();
     }, 1500);
-  };
+  }, [processingSteps.length, addToast, onDocumentUploaded, handleClose]);
+
+  const handleFileSelect = useCallback((files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    
+    // Validar tipo de archivo
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadStatus("error");
+      return;
+    }
+
+    // Validar tamaño (máximo 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadStatus("error");
+      return;
+    }
+
+    // Crear preview para imágenes
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          setUploadedFile({
+            file,
+            preview: e.target.result as string
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setUploadedFile({ file });
+    }
+
+    // Iniciar proceso de subida
+    startUploadProcess(file);
+  }, [startUploadProcess]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -235,7 +235,7 @@ const UploadDocumentModal = ({ isOpen, onClose, onDocumentUploaded }: UploadDocu
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-primary/10 dark:bg-primary/20 rounded-lg">
-                              <Upload className="h-6 w-6 text-primary" />
+              <Upload className="h-6 w-6 text-primary" />
             </div>
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -331,9 +331,11 @@ const UploadDocumentModal = ({ isOpen, onClose, onDocumentUploaded }: UploadDocu
               <Card className="p-4">
                 <div className="flex items-center gap-4">
                   {uploadedFile.preview ? (
-                    <img 
+                    <Image 
                       src={uploadedFile.preview} 
                       alt="Preview" 
+                      width={64}
+                      height={64}
                       className="h-16 w-16 object-cover rounded border"
                     />
                   ) : (
@@ -347,11 +349,11 @@ const UploadDocumentModal = ({ isOpen, onClose, onDocumentUploaded }: UploadDocu
                       {(uploadedFile.file.size / 1024 / 1024).toFixed(2)} MB
                     </p>
                   </div>
-                  <Badge className={`${
+                  <Badge className={
                     uploadStatus === "completed" ? "bg-green-100 text-green-800" :
                     uploadStatus === "error" ? "bg-red-100 text-red-800" :
                     "bg-primary/10 text-primary"
-                  }`}>
+                  }>
                     {uploadStatus === "uploading" ? "Subiendo..." :
                      uploadStatus === "processing" ? "Procesando..." :
                      uploadStatus === "completed" ? "Completado" : "Error"}
