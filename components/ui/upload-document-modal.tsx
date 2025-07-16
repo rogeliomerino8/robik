@@ -325,7 +325,7 @@ const UploadDocumentModal = ({ isOpen, onClose, onDocumentUploaded }: UploadDocu
             </>
           )}
 
-          {(uploadStatus === "uploading" || uploadStatus === "processing" || uploadStatus === "completed") && uploadedFile && (
+          {(uploadStatus === "uploading" || uploadStatus === "processing" || uploadStatus === "completed" || uploadStatus === "error") && uploadedFile && (
             <>
               {/* File Preview */}
               <Card className="p-4">
